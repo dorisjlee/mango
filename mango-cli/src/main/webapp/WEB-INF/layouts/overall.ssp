@@ -55,9 +55,7 @@
     for (var i = 0; i < rawSamples.length; i++){
     sampleMap[filterName(rawSamples[i])] = rawSamples[i];
     }
-
     var width = window.innerWidth - 18;
-
 
 </script>
 <script src="js/reads.js"></script>
