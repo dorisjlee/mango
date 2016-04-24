@@ -4,13 +4,13 @@
 <%@ val variantsExist: Boolean %>
 <%@ val featuresExist: Boolean %>
 <% attributes("page") = "reads" %>
+<% attributes("home") = "on" %>
 
 <%@ val rawSamples: Array[String] = samples.split(",").distinct %>
 <%@ val filteredSamples: Map[String, String] = rawSamples.map(r =>  (r, r.replace("/",""))).toMap %>
 
 
 <html xmlns="http://www.w3.org/1999/html">
-
 <% render("templates/head.ssp") %>
 <% render("navigation/navigation.ssp") %>
 <% render("navigation/panAndZoom.ssp", Map("page" -> "reads")) %>
