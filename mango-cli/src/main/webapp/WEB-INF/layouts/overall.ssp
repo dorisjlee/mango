@@ -13,6 +13,7 @@
           <div class="graphArea" id="refArea"></div>
           <div class="graphArea" id="featArea"></div>
           <div class="graphArea" id="varArea"></div>
+          <% render("../templates/home.ssp")%>
           <div class="graphArea" id="readsArea"></div>
     </div>    
     

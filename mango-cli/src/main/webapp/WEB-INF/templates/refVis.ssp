@@ -67,8 +67,8 @@ function refVis(dictionary){
   path.on('click', function(d) {
     var start = Math.round(d.data.length/2.);
     var end =  Math.round(d.data.length/2. +1000);
-    render(d.data.name, start,end, 50); 
     document.getElementById("autocomplete").value = d.data.name+":"+start.toString()+"-"+end;
+    render(d.data.name, start,end, 50); 
   });  
 
   path.on('mouseout', function() {                              
