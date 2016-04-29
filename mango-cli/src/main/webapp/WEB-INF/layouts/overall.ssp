@@ -4,6 +4,7 @@
 <%@ val variantsExist: Boolean %>
 <%@ val featuresExist: Boolean %>
 <% attributes("page") = "reads" %>
+<% attributes("home") = "on" %>
 
 <html xmlns="http://www.w3.org/1999/html">
     <% render("../templates/head.ssp")%>
@@ -13,8 +14,9 @@
           <div class="graphArea" id="refArea"></div>
           <div class="graphArea" id="featArea"></div>
           <div class="graphArea" id="varArea"></div>
-          <% render("../templates/home.ssp")%>
-          <div class="graphArea" id="readsArea"></div>
+          <% println(viewRegion) %>
+
+          <% render("../templates/home.ssp", Map("region"->"viewRegion"))%>
     </div>    
     
   <% render("../templates/sidebar.ssp")%>
