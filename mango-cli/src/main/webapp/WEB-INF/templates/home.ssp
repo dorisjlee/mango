@@ -61,7 +61,6 @@
 <script src="js/overall.js"></script>
 
 </html>
-  
 <script>
 function home(dictionary){
   //Render read summary visualization on the home screen at startup 

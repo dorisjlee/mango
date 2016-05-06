@@ -5,7 +5,6 @@
 <%@ val featuresExist: Boolean %>
 <% attributes("page") = "reads" %>
 <% attributes("home") = "on" %>
-
 <%@ val rawSamples: Array[String] = samples.split(",").distinct %>
 <%@ val filteredSamples: Map[String, String] = rawSamples.map(r =>  (r, r.replace("/",""))).toMap %>
 
