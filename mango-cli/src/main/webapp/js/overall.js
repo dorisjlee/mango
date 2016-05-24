@@ -16,7 +16,7 @@ var home;
 //Manages changes when clicking checkboxes
 d3.selectAll("input").on("change", checkboxChange);
 
-// Create the scale for the axis
+// Create the scale for the x-axis
 var refAxisScale = d3.scale.linear()
     .domain([viewRegStart, viewRegEnd])
     .range([0, width]);
@@ -39,7 +39,7 @@ var initJson =  "/init/" + Math.round($(".samples").width());
 d3.json(initJson, function(error, seqDict) {
   sDict = seqDict;
   autoComplete(seqDict);
-  home(seqDict);
+  // home(seqDict);
 });
 
 //All rendering of data, and everything setting new region parameters, is done here
