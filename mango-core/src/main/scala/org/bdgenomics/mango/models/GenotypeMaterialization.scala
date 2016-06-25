@@ -23,11 +23,11 @@ import org.apache.parquet.filter2.predicate.FilterPredicate
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
-import org.bdgenomics.adam.models.{ ReferencePosition, ReferenceRegion, SequenceDictionary }
+import org.bdgenomics.adam.models.{ ReferenceRegion, SequenceDictionary }
 import org.bdgenomics.adam.projections.{ GenotypeField, Projection }
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.formats.avro.Genotype
-import org.bdgenomics.mango.layout.{ VariantFreqLayout, VariantFreq, VariantLayout }
+import org.bdgenomics.mango.layout.{ VariantFreq, VariantJson }
 import org.bdgenomics.mango.tiling._
 import org.bdgenomics.mango.util.Bookkeep
 import org.bdgenomics.utils.intervalrdd.IntervalRDD
@@ -116,9 +116,7 @@ class GenotypeMaterialization(s: SparkContext, d: SequenceDictionary, parts: Int
           case Some(_) => {
             val dataLayer: Layer = layerOpt.get
             val layers = getTiles(region, ks, List(freqLayer, dataLayer))
-            val freq = layers.get(freqLayer).get
-            val variants = layers.get(dataLayer).get
-            write(Map("freq" -> freq, "variants" -> variants))
+            layers.get(dataLayer).get
           }
           case None => {
             val layers = getTiles(region, ks, List(freqLayer))
@@ -158,7 +156,10 @@ class GenotypeMaterialization(s: SparkContext, d: SequenceDictionary, parts: Int
 
     val flattened: Map[String, Array[Genotype]] = data.groupBy(_._1)
       .map(r => (r._1, r._2.flatMap(_._2)))
-    write(flattened.mapValues(r => VariantLayout(r)))
+
+    // TODO
+    val x: List[VariantJson] = flattened.head._2.map(r => VariantJson(r)).toList
+    write(x)
   }
 
   /**

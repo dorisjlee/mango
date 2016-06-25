@@ -19,13 +19,6 @@
             <%--<div class="graphArea" id="featArea"></div>--%>
         <%--#end--%>
 
-        <%--#if (variantsExist)--%>
-            <%--<div class="graphArea" id="varArea">--%>
-            <%--<% variantsPaths.get.foreach(s =>--%>
-                <%--render("templates/variants.ssp", Map("sample" -> s, "id" -> s)))%>--%>
-            <%--</div>--%>
-        <%--#end--%>
-
         <%--#if (readsExist)--%>
             <%--<div class="graphArea" id="readsArea">--%>
             <%--<% readsSamples.get.foreach(s =>--%>
@@ -75,7 +68,20 @@ xhr.onreadystatechange = function() {
                         contigList: contigList
                     }),
                     name: 'Reference'
-                }
+                },
+                #if (variantsExist)
+                    #for (s <- variantsPaths.get)
+                    {
+                        viz: pileup.viz.variants(),
+                        data: pileup.formats.variants({
+                            url: '/variants',
+                            contigList: contigList,
+                            sample: '${s}'
+                        }),
+                        name: 'Variants'
+                    }
+                    #end
+                #end
             ]
         });
     }
