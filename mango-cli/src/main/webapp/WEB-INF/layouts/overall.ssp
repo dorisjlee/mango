@@ -1,9 +1,4 @@
 <%@ val dictionary: String%>
-<%@ val readsExist:     Boolean %>
-<%@ val readsSamples:   Option[List[String]] %>
-<%@ val variantsPaths:  Option[List[String]] %>
-<%@ val variantsExist:  Boolean %>
-<%@ val featuresExist:  Boolean %>
 
 <html xmlns="http://www.w3.org/1999/html">
 <% render("templates/head.ssp") %>
@@ -11,22 +6,7 @@
 <% render("templates/sidebar.ssp") %>
 
 <div id="main">
-    <%--<div id="home">--%>
-        <%--<% render("templates/home.ssp", Map("dictionary" -> dictionary)) %>--%>
-    <%--</div>--%>
-
-        <%--#if (featuresExist)--%>
-            <%--<div class="graphArea" id="featArea"></div>--%>
-        <%--#end--%>
-
-        <%--#if (readsExist)--%>
-            <%--<div class="graphArea" id="readsArea">--%>
-            <%--<% readsSamples.get.foreach(s =>--%>
-                <%--render("templates/reads.ssp", Map("sample" -> s, "id" -> s.replace("/","")))) %>--%>
-            <%--</div>--%>
-        <%--#end--%>
-    
-    <div id="pileup"></div>
+    <div class="chart"></div>
 </div>
 
 
@@ -38,88 +18,72 @@
 
 <script>
     <!-- Define Global Variables -->
-    var readsExist = ${readsExist};
-    var variantsExist = ${variantsExist};
-    var featuresExist = ${featuresExist};
     refVis("${dictionary}");
     toggleContent(false);
-
 </script>
+
 
 <script>
-// TODO: make function in pileup to fetch SequenceDictionary
-var request = "/sequenceDictionary"
-var xhr = new XMLHttpRequest();
-xhr.open('GET', request, true);
-xhr.send();
+home("${dictionary}");
+function home(dictionary){
+  //Render read summary visualization on the home screen at startup 
+  console.log(dictionary)
+  dictionary= dictionary.split(",")
+  var namelist=[];
+  var lengthlist=[];
+  var totalLength=0;
+  var dataset = [];
+  for (i = 0; i < dictionary.length; i++) { 
+   var range = dictionary[i].split(":")[1].split("-");
+   var length = parseInt(range[1]-range[0]);
+   var name = dictionary[i].split(":")[0];
+   dataset.push({name: name, length: length });
+   namelist.push(name);
+   lengthlist.push(length);
+   totalLength+=length;
+  }
 
-xhr.onreadystatechange = function() {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-        var contigList = JSON.parse(xhr.response);
-        var p = pileup.create(document.getElementById('pileup'), {
-            // go to one of the chromosomes in sequence dictionary
-            range: {contig: 'chrM', start: 0, stop: 100},
-            tracks: [
-                {
-                    viz: pileup.viz.genome(),
-                    isReference: true,
-                    data: pileup.formats.reference({
-                        url: '/reference',
-                        contigList: contigList
-                    }),
-                    name: 'Reference'
-                },
-                {
-                    viz: pileup.viz.pileup(),
-                    isReference: false,
-                    data: pileup.formats.ga4gh({
-                        // endpoint: '/GA4GHreads',
-                        endpoint: '/testReads',
-                        readGroupId: 'C57BL/6J',
-                        killChr: false
-                    }),
-                    name: 'Alignment'
-                },
-                {
-                   viz: pileup.viz.pileup(),
-                   data: pileup.formats.ga4gh({ 
-                        endpoint: '/testReads',
-                        readGroupId: 'C57BL/6J',
-                        killChr: false
-                    }),
-                   cssClass: 'normal',
-                   name: 'Alignments'
-                }
-            ]
-        });
+  // Sorting by numerical value and not lexical order
+  dataset.sort(function(a, b){return b.length-a.length}); 
+  
+  // Can end range with d3.max(lengthlist) = 249250621 or something smaller (fit in screen)
+  var x = d3.scale.linear()
+    .domain([0, 120])
+    .range([0, 150000]);
+  
+  var chart  = d3.select(".chart")
+    .selectAll("div")
+    .data(dataset)
+    .enter().append("div")
+    .style("width", function(d) { return x(d.length)/d3.max(lengthlist) + "px"; })
+    .text(function(d) { return d.name; });
 
+  var path  = d3.select(".chart")
+                .selectAll("div")
+                .data(dataset);
+  
+  path.on('click', function(d) {
+    // Heuristic for viewing central region
+    var start = Math.round(d.length/2.);
+    var end =  Math.round(d.length/2. +1000);
+    //Redirects to browser
+    window.location='/browser'
+    // TODO: This also needs to select the right sample in the pull down menu (Right now there's only chrM)
+    // TODO: This needs to happen after the pileup is rendered  (after line 83 of browser.ssp) so that the form-fields are not overridden. 
+    homeVisSubmit(start,end);
+    function homeVisSubmit(start,end){
+        $("#form-field").value = start.toString()+"-"+end.toString();
+        $("#go").click();
     }
-};
+  });  
 
+  path.on('mouseover', function(d,i) {                              
+    path[0][i].style.backgroundColor = "red";
+  });     
 
+  path.on('mouseout', function(d,i) {                              
+    path[0][i].style.backgroundColor = "steelblue";
+  });     
+}
 </script>
-
-#if (featuresExist)
-    <script src="js/features.js"></script>
-#end
-#if (variantsExist)
-    <% var varJsonSamples = variantsPaths.get.reduce((a1, a2) => (a1 + "," + a2)) %>
-    <script>
-        var varSampleIds = "${varJsonSamples}";
-        var varFiles = varSampleIds.split(",").unique();
-    </script>
-    <script src="js/variants.js"></script>
-#end
-#if (readsExist)
-    <% var jsonSamples = readsSamples.get.reduce((a1, a2) => (a1 + "," + a2)) %>
-    <script>
-        var sampleIds = "${jsonSamples}";
-        var rawSamples = sampleIds.split(",").unique();
-        var samples = filterNames(rawSamples);
-    </script>
-    <script src="js/freq.js"></script>
-    <script src="js/reads.js"></script>
-#end
-
-
 </html>

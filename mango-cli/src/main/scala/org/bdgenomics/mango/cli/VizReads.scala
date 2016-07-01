@@ -172,6 +172,14 @@ class VizServlet extends ScalatraServlet {
     // set initial referenceRegion so it is defined
     session("referenceRegion") = ReferenceRegion("chr", 1, 100)
     templateEngine.layout("mango-cli/src/main/webapp/WEB-INF/layouts/overall.ssp",
+      Map("dictionary" -> VizReads.formatDictionaryOpts(VizReads.globalDict)))
+  }
+
+  get("/browser") {
+    contentType = "text/html"
+    val templateEngine = new TemplateEngine
+    // set initial referenceRegion so it is defined
+    templateEngine.layout("mango-cli/src/main/webapp/WEB-INF/layouts/browser.ssp",
       Map("dictionary" -> VizReads.formatDictionaryOpts(VizReads.globalDict),
         "readsSamples" -> VizReads.sampNames,
         "readsExist" -> VizReads.readsExist,
