@@ -28,6 +28,11 @@ import org.bdgenomics.utils.misc.Logging
 
 import scala.reflect.ClassTag
 
+/**
+ * Abstract store for data grouped by certain criteria in an interval tree
+ * @tparam T Individual elements in RDD
+ * @tparam S How to group elements by (Tile, filter, etc)
+ */
 abstract class LazyMaterialization[T: ClassTag, S: ClassTag] extends Serializable with Logging {
 
   def sc: SparkContext
@@ -82,7 +87,7 @@ abstract class LazyMaterialization[T: ClassTag, S: ClassTag] extends Serializabl
     if (seqRecord.isDefined) {
       var data: RDD[(String, T)] = sc.emptyRDD[(String, T)]
 
-      // get alignment data for all samples
+      // get data for all samples
       files.map(fp => {
         val k = LazyMaterialization.filterKeyFromFile(fp)
         val d = load(region, fp).map(v => (k, v))
