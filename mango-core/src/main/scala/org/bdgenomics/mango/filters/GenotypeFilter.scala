@@ -18,7 +18,7 @@
 package org.bdgenomics.mango.filters
 
 import org.apache.spark.rdd.RDD
-import org.bdgenomics.adam.models.{ ReferencePosition, ReferenceRegion }
+import org.bdgenomics.adam.models.{ VariantContext, ReferencePosition, ReferenceRegion }
 import org.bdgenomics.formats.avro.Genotype
 import org.bdgenomics.mango.filters.GenotypeFilterType.GenotypeFilterType
 
@@ -34,10 +34,10 @@ object GenotypeFilterType extends Enumeration {
  */
 object GenotypeFilter {
 
-  def filter(rdd: RDD[Genotype], x: GenotypeFilterType, window: Long, threshold: Long): RDD[(ReferenceRegion, Long)] = {
+  def filter(rdd: RDD[VariantContext], x: GenotypeFilterType, window: Long, threshold: Long): RDD[(ReferenceRegion, Long)] = {
     x match {
-      case GenotypeFilterType.lowDensity  => GenericFilter.filterByDensity(window, threshold, rdd.map(r => (ReferenceRegion(ReferencePosition(r)), r)), false)
-      case GenotypeFilterType.highDensity => GenericFilter.filterByDensity(window, threshold, rdd.map(r => (ReferenceRegion(ReferencePosition(r)), r)), true)
+      case GenotypeFilterType.lowDensity  => GenericFilter.filterByDensity(window, threshold, rdd.map(r => (ReferenceRegion(ReferencePosition(r.variant)), r)), false)
+      case GenotypeFilterType.highDensity => GenericFilter.filterByDensity(window, threshold, rdd.map(r => (ReferenceRegion(ReferencePosition(r.variant)), r)), true)
       case _                              => throw new Exception("Invalid filter for Genotypes")
     }
   }

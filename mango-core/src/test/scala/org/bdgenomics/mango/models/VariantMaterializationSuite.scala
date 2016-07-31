@@ -18,10 +18,15 @@
 
 package org.bdgenomics.mango.models
 
+import net.liftweb.json._
+
+import net.liftweb.json.DefaultFormats
 import org.bdgenomics.adam.models.{ ReferenceRegion, SequenceDictionary, SequenceRecord }
+import org.bdgenomics.mango.layout.{ GenotypeJson, VariantJson }
 import org.bdgenomics.mango.util.MangoFunSuite
 
-class GenotypeMaterializationSuite extends MangoFunSuite {
+class VariantMaterializationSuite extends MangoFunSuite {
+  implicit val formats = DefaultFormats
 
   val sd = new SequenceDictionary(Vector(SequenceRecord("chr1", 2000L),
     SequenceRecord("chrM", 20000L),
@@ -42,20 +47,24 @@ class GenotypeMaterializationSuite extends MangoFunSuite {
 
   sparkTest("Fetch from 1 vcf file") {
     val region = new ReferenceRegion("chrM", 0, 999)
-    val data = GenotypeMaterialization(sc, List(vcfFile1), sd, 10)
+    val data = new VariantMaterialization(sc, List(vcfFile1), sd, 1000)
     val json = data.get(region)
 
-    assert(json.get(data.genotypeLayer).get(vcfKey1).length > 0)
+    val variants = parse(json._1).extract[Array[VariantJson]]
+    val genotypes = parse(json._2).extract[Array[GenotypeJson]]
+    assert(variants.length == 3)
+    assert(genotypes.length == 3)
   }
 
   sparkTest("more than 1 vcf file") {
     val region = new ReferenceRegion("chrM", 0, 999)
-    val data = GenotypeMaterialization(sc, vcfFiles, sd, 10)
+    val data = new VariantMaterialization(sc, vcfFiles, sd, 10)
     val json = data.get(region)
 
-    assert(json.get(data.genotypeLayer).get(vcfKey1).length > 0)
-    assert(json.get(data.genotypeLayer).get(vcfKey2).length > 0)
-
+    val variants = parse(json._1).extract[Array[VariantJson]]
+    val genotypes = parse(json._2).extract[Array[GenotypeJson]]
+    assert(variants.length == 6)
+    assert(genotypes.length == 6)
   }
 
 }

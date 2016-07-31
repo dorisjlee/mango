@@ -85,6 +85,13 @@ class VizReadsSuite extends MangoFunSuite with ScalatraSuite {
     }
   }
 
+  sparkTest("/variants/:ref") {
+    implicit val vizReads = runVizReads(args)
+    get("/variants/chrM?start=0&end=1200&alleleCount=0&alleleFrequency=0") {
+      assert(status == Ok("").status.code)
+    }
+  }
+
   sparkTest("Should pass for discovery mode") {
     val args = new VizReadsArgs()
     args.discoveryMode = true

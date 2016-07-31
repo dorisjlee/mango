@@ -19,6 +19,7 @@
 package org.bdgenomics.mango.layout
 
 import org.bdgenomics.adam.models.{ Exon, Gene, ReferenceRegion }
+import org.bdgenomics.formats.avro.{ DatabaseVariantAnnotation, Genotype, Variant }
 
 /**
  * This file contains case classes for json conversions
@@ -26,8 +27,41 @@ import org.bdgenomics.adam.models.{ Exon, Gene, ReferenceRegion }
 
 case class Interval(start: Long, end: Long)
 
-case class VariantJson(contig: String, position: Long, ref: String, alt: String)
+object VariantJson {
+  def apply(v: Variant, d: Option[DatabaseVariantAnnotation] = None): VariantJson = {
+    val (alleleCount: Int, alleleFrequency: Float) =
+      if (d.isDefined)
+        (d.get.getThousandGenomesAlleleCount, d.get.getThousandGenomesAlleleFrequency)
+      else (-1, -1.0F)
+    new VariantJson(v.getContigName, v.getStart, v.getReferenceAllele, v.getAlternateAllele, alleleCount, alleleFrequency)
+  }
+}
+case class VariantJson(contig: String, position: Long, ref: String, alt: String, alleleCount: Int, alleleFrequency: Float)
 
+object GenotypeJson {
+  /**
+   * Takes in an iterable of Genotypes from VariantContext and formats them to json
+   * @param g Iterable of genotypes
+   * @return 1 GenotypeJson object
+   */
+  def apply(g: Array[Genotype], d: Option[DatabaseVariantAnnotation] = None): GenotypeJson = {
+    if (g.isEmpty) throw new Exception("Cannot format empty Genotypes to json")
+    else {
+      val (alleleCount: Int, alleleFrequency: Float) =
+        if (d.isDefined)
+          (d.get.getThousandGenomesAlleleCount, d.get.getThousandGenomesAlleleFrequency)
+        else (-1, -1.0F)
+      val samples = g.map(_.getSampleId)
+      val first = g.head
+      val variant = VariantJson(
+        first.getContigName,
+        first.getStart,
+        first.getVariant.getReferenceAllele,
+        first.getVariant.getAlternateAllele, alleleCount, alleleFrequency)
+      GenotypeJson(samples, variant)
+    }
+  }
+}
 case class GenotypeJson(sampleIds: Array[String], variant: VariantJson)
 
 case class BedRowJson(id: String, featureType: String, contig: String, start: Long, stop: Long)

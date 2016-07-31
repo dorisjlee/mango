@@ -21,19 +21,15 @@ import java.io.FileNotFoundException
 import net.liftweb.json.Serialization.write
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
-import org.bdgenomics.mango.converters.GA4GHConverter
-import org.bdgenomics.adam.rdd.ADAMContext._
-import org.bdgenomics.adam.models.{ ReferenceRegion, SequenceDictionary }
-import org.bdgenomics.formats.avro.{ AlignmentRecord, Feature, Genotype }
+import org.bdgenomics.adam.models.{ VariantContext, ReferenceRegion, SequenceDictionary }
+import org.bdgenomics.formats.avro.{ Feature, Genotype }
 import org.bdgenomics.mango.core.util.VizUtils
 import org.bdgenomics.mango.filters.{ FeatureFilterType, GenotypeFilterType, FeatureFilter, GenotypeFilter }
-import org.bdgenomics.mango.tiling.{ L1, L0, Layer }
 import org.bdgenomics.mango.models._
 import org.bdgenomics.mango.util.Bookkeep
 import org.bdgenomics.utils.cli._
 import org.bdgenomics.utils.instrumentation.Metrics
 import org.bdgenomics.utils.misc.Logging
-import org.ga4gh.{ GASearchReadsResponse, GAReadAlignment }
 import org.fusesource.scalate.TemplateEngine
 import org.kohsuke.args4j.{ Argument, Option => Args4jOption }
 import org.scalatra._
@@ -73,7 +69,7 @@ object VizReads extends BDGCommandCompanion with Logging {
   // Structures storing data types. All but reference is optional
   var annotationRDD: AnnotationMaterialization = null
   var readsData: Option[AlignmentRecordMaterialization] = None
-  var variantData: Option[GenotypeMaterialization] = None
+  var variantData: Option[VariantMaterialization] = None
   var featureData: Option[FeatureMaterialization] = None
 
   // variables tracking whether optional datatypes were loaded
@@ -93,7 +89,8 @@ object VizReads extends BDGCommandCompanion with Logging {
 
   // variant cache
   var variantsWait = false
-  var variantsCache: Map[Layer, Map[String, String]] = Map.empty[Layer, Map[String, String]]
+  // cache of (VariantJson, GenotypeJson)
+  var variantsCache = Tuple2("", "")
   var variantsRegion: ReferenceRegion = null
 
   // features cache
@@ -253,7 +250,7 @@ class VizServlet extends ScalatraServlet {
     }
 
     val variantsPaths = try {
-      Some(VizReads.variantData.get.getFiles.map(r => LazyMaterialization.filterKeyFromFile(r)))
+      Some(VizReads.variantData.get.files.map(r => LazyMaterialization.filterKeyFromFile(r)))
     } catch {
       case _ => None
     }
@@ -369,7 +366,8 @@ class VizServlet extends ScalatraServlet {
       else {
         val viewRegion = ReferenceRegion(params("ref"), params("start").toLong,
           VizUtils.getEnd(params("end").toLong, VizReads.globalDict(params("ref"))))
-        val key: String = params("key")
+        val alleleCount = params("alleleCount").toInt
+        val alleleFrequency = params("alleleFrequency").toFloat
         contentType = "json"
 
         // if region is in bounds of reference, return data
@@ -379,14 +377,11 @@ class VizServlet extends ScalatraServlet {
           // region was already collected, grab from cache
           if (viewRegion != VizReads.variantsRegion) {
             VizReads.variantsWait = true
-            VizReads.variantsCache = VizReads.variantData.get.get(viewRegion)
+            VizReads.variantsCache = VizReads.variantData.get.get(viewRegion, Some(alleleCount), Some(alleleFrequency))
             VizReads.variantsRegion = viewRegion
             VizReads.variantsWait = false
           }
-          val results = VizReads.variantsCache.get(VizReads.variantData.get.genotypeLayer).get.get(key)
-          if (results.isDefined) {
-            Ok(results.get)
-          } else ({}) // No data for this key
+          VizReads.variantsCache._2
         } else VizReads.errors.outOfBounds
       }
     }
@@ -399,7 +394,9 @@ class VizServlet extends ScalatraServlet {
       else {
         val viewRegion = ReferenceRegion(params("ref"), params("start").toLong,
           VizUtils.getEnd(params("end").toLong, VizReads.globalDict(params("ref"))))
-        val key: String = params("key")
+        val alleleCount = params("alleleCount").toInt
+        val alleleFrequency = params("alleleFrequency").toFloat
+
         contentType = "json"
 
         // if region is in bounds of reference, return data
@@ -409,14 +406,11 @@ class VizServlet extends ScalatraServlet {
           // region was already collected, grab from cache
           if (viewRegion != VizReads.variantsRegion) {
             VizReads.variantsWait = true
-            VizReads.variantsCache = VizReads.variantData.get.get(viewRegion)
+            VizReads.variantsCache = VizReads.variantData.get.get(viewRegion, Some(alleleCount), Some(alleleFrequency))
             VizReads.variantsRegion = viewRegion
             VizReads.variantsWait = false
           }
-          val results = VizReads.variantsCache.get(VizReads.variantData.get.variantLayer).get.get(key)
-          if (results.isDefined) {
-            Ok(results.get)
-          } else Ok({}) // No data for this key
+          VizReads.variantsCache._1
         } else VizReads.errors.outOfBounds
       }
     }
@@ -531,7 +525,7 @@ class VizReads(protected val args: VizReadsArgs) extends BDGSparkCommand[VizRead
           .foreach(file => log.warn(s"${file} does is not a valid variant file. Removing... "))
 
         if (!variantsPaths.isEmpty) {
-          VizReads.variantData = Some(GenotypeMaterialization(sc, variantsPaths, VizReads.globalDict, partitionCount))
+          VizReads.variantData = Some(new VariantMaterialization(sc, variantsPaths, VizReads.globalDict, VizReads.chunkSize))
         }
       }
     }
@@ -572,8 +566,7 @@ class VizReads(protected val args: VizReadsArgs) extends BDGSparkCommand[VizRead
             log.warn("specified discovery predicate for variants but no variant files were provided")
             sc.emptyRDD[(ReferenceRegion, Long)]
           } else {
-            var variants: RDD[Genotype] = VizReads.sc.emptyRDD[Genotype]
-            VizReads.variantData.get.files.foreach(fp => variants = variants.union(GenotypeMaterialization.load(sc, None, fp)))
+            var variants: RDD[VariantContext] = VariantMaterialization.load(sc, None, VizReads.variantData.get.files, VizReads.globalDict).rdd
             val threshold = args.threshold
             GenotypeFilter.filter(variants, GenotypeFilterType(variantFilter.get), VizReads.chunkSize, threshold)
           }
