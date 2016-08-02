@@ -28,10 +28,18 @@
     var end = ${end};
 
     <!-- Render sidebar for navigation -->
-    refVis("${dictionary}",fromOverall=false);
+    var dict = "${dictionary}";
+    refVis(dict,fromOverall=false);
 
+    // Variants
+    $("#submit").on('click', function(d) {
+        var request = '/variants/' + dict.split(":")[0] + '?start=' + start + '&end=' + end+'&alleleCount='+$("#count").val()+'&alleleFrequency='+$("#slider").slider("value");
+        var xhr = new XMLHttpRequest();
+        console.log(request);
+        xhr.open('GET', request, true);
+        xhr.send();
+    });
 </script>
-
 <script>
 var request = "/sequenceDictionary"
 var xhr = new XMLHttpRequest();
