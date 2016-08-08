@@ -40,10 +40,10 @@
   </div>
   <br>
   <button style="float:right" id = "submit">Submit</button>
- 
 </nav>
 
 <script>
+
   $(document).ready(function() {
       $('.menu-link').bigSlide();
   });
