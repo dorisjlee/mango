@@ -4,14 +4,14 @@
     <div >
     <!-- Transcript Effect -->
     <h4>Transcript Effect</h4>
-    <button class ="transEff" type="button">3 prime UTR</button>
-    <button class ="transEff" type="button">Intron</button>
-    <button class ="transEff" type="button">5 prime UTR</button>
-    <button class ="transEff" type="button">Missense</button>
-    <button class ="transEff" type="button">Coding sequence</button>
-    <button class ="transEff" type="button">Upstream</button>
-    <button class ="transEff" type="button">Downstream</button>
-    <button class ="transEff" type="button">Splice acceptor</button>
+    <Input class ="transEff" type="checkbox" name="3prime">3 prime UTR</button>
+    <Input class ="transEff" type="checkbox" name="Intr">Intron</button>
+<br><Input class ="transEff" type="checkbox" name="5prime">5 prime UTR</button>
+    <Input class ="transEff" type="checkbox" name="Mis">Missense</button>
+    <Input class ="transEff" type="checkbox" name="Cod">Coding Sequence</button>
+<br><Input class ="transEff" type="checkbox" name="Up">Upstream</button>
+    <Input class ="transEff" type="checkbox" name="Down">Downstream</button>
+<br><Input class ="transEff" type="checkbox" name="Splice">Splice acceptor</button>
   </div>
 
   <div>
@@ -40,14 +40,10 @@
   </div>
   <br>
   <button style="float:right" id = "submit">Submit</button>
-
-
-<!--   http://localhost:8080/variants/20?start=0&end=60000&alleleCount=0&alleleFrequency=0 -->
-
+ 
 </nav>
 
 <script>
-
   $(document).ready(function() {
       $('.menu-link').bigSlide();
   });
