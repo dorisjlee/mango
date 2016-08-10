@@ -104,7 +104,9 @@ input[type="text"] {
 #refVis {
   height: 180px;
   position: relative;
-  width: 180px; }
+  width: 180px;
+  text-align: center;
+  padding: 0px 10px; }
 
 .chart div {
   font: 13px sans-serif;
@@ -182,6 +184,16 @@ h2.panel {
   right: 10px;
   top: 100px;
   bottom: 10px; }
+
+#varFilter {
+  background: #ccc;
+  margin-left: -21px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  width: 260px;
+  height: 100%;
+  float: center;
+  z-index: 99999; }
 
 .graphArea {
   padding: 3px; }

@@ -1,48 +1,26 @@
+
 <nav id="menu" class="panel" role="navigation">
     <% render("refVis.ssp")%>
       <br>
-    <div >
-    <!-- Transcript Effect -->
-    <h4>Transcript Effect</h4>
-    <Input class ="transEff" type="checkbox" name="3prime">3 prime UTR</button>
-    <Input class ="transEff" type="checkbox" name="Intr">Intron</button>
-<br><Input class ="transEff" type="checkbox" name="5prime">5 prime UTR</button>
-    <Input class ="transEff" type="checkbox" name="Mis">Missense</button>
-    <Input class ="transEff" type="checkbox" name="Cod">Coding Sequence</button>
-<br><Input class ="transEff" type="checkbox" name="Up">Upstream</button>
-    <Input class ="transEff" type="checkbox" name="Down">Downstream</button>
-<br><Input class ="transEff" type="checkbox" name="Splice">Splice acceptor</button>
-  </div>
-
-  <div>
-    <h4>Read Depth</h4>
-    <input  type="number" 
-        min ="0"
-        max ="1000"
-        step="100"
-        id="depth">
-  </div>
-
-  <div>
-    <h4>Allele Count</h4>
-    <input  type="number"
-        min ="0"
-        max ="1000"
-        step="100"
-        id="count">
-  </div>
-
-  <div>
-    <h4>Allele Frequency</h4>
-    
-      <input type="text" id="freq" readonly style="display:inline;background:#ccc;border:0;font-weight:bold; align:right;">
-        <div id="slider"></div>
-  </div>
-  <br>
-  <button style="float:right" id = "submit">Submit</button>
+    <div id="varFilter"></div>
 </nav>
 
 <script>
+
+xhr.onreadystatechange = function() {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+        var contigList = JSON.parse(xhr.response);
+        var p = pileup.create(document.getElementById('varFilter'), {
+            range: {contig: contig, start: start, stop: end},
+            tracks: [
+                {
+                    viz: pileup.viz.filters.VariantFilter(),
+                    name: 'VarFilter'
+                }
+            ]
+        };
+      };
+    };
 
   $(document).ready(function() {
       $('.menu-link').bigSlide();
